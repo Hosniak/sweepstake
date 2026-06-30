@@ -27,6 +27,65 @@ def load_existing_payload():
         return {}
 
 
+def parse_match_time(match):
+    for key in ('matchDateTimeUTC', 'matchDateTime', 'MatchDateTimeUTC', 'MatchDateTime'):
+        dt_text = match.get(key)
+        if isinstance(dt_text, str) and dt_text:
+            try:
+                return datetime.fromisoformat(dt_text.replace('Z', '+00:00')).strftime('%a %d %b %H:%M UTC')
+            except Exception:
+                return dt_text
+    return 'TBD'
+
+
+def format_score(match):
+    results = match.get('matchResults') or []
+    if not isinstance(results, list):
+        results = [results]
+    for result in results:
+        if result.get('resultType') == 'FINAL' or str(result.get('resultName', '')).lower() == 'final':
+            return f"{result.get('pointsTeam1', '?')} - {result.get('pointsTeam2', '?')}"
+    if results:
+        first = results[0]
+        return f"{first.get('pointsTeam1', '?')} - {first.get('pointsTeam2', '?')}"
+    return 'vs'
+
+
+def is_live_match(match):
+    if match.get('matchIsRunning') or match.get('isLive'):
+        return True
+    if match.get('matchIsStarted') and not match.get('matchIsFinished'):
+        return True
+    return False
+
+
+def render_live_section(live_matches):
+    if not live_matches:
+        return ''
+    rows = []
+    for match in live_matches:
+        home = match.get('team1', {}).get('teamName', 'TBD')
+        away = match.get('team2', {}).get('teamName', 'TBD')
+        score = format_score(match)
+        status = 'LIVE'
+        time_text = parse_match_time(match)
+        rows.append(
+            f"<div class=\"team-pill\">"
+            f"<div class=\"team-info\"><span class=\"name-container\"><span class=\"team-name\">{home} vs {away}</span>"
+            f"<span class=\"group-name\">{time_text} · {status}</span></div></div>"
+            f"<div style=\"margin-left:14px;color:#f8fafc;font-size:14px;\">Score: {score}</div>"
+        )
+    return f"""
+    <section class=\"info-section\">
+      <h2>🔴 LIVE RIGHT NOW</h2>
+      <div class=\"guide-box\">
+        <strong>Matches currently in progress</strong>
+        {''.join(rows)}
+      </div>
+    </section>
+    """
+
+
 def render_html(matches, existing_html, timestamp):
     if not matches:
         if existing_html:
@@ -45,6 +104,9 @@ def render_html(matches, existing_html, timestamp):
         </section>
         """
 
+    live_matches = [match for match in matches if is_live_match(match)]
+    live_html = render_live_section(live_matches)
+
     rows = []
     for match in matches[:8]:
         home = match.get('team1', {}).get('teamName', 'TBD')
@@ -61,6 +123,7 @@ def render_html(matches, existing_html, timestamp):
     return f"""
     <h1>🏆 askporter Sweepstake Command Center 🏆</h1>
     <div class=\"subtitle\">Auto-updated from OpenLigaDB · {timestamp}</div>
+    {live_html}
     <section class=\"info-section\">
       <div class=\"guide-box\">
         <strong>Latest World Cup data</strong>
