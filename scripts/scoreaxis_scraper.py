@@ -38,6 +38,17 @@ def parse_match_time(match):
     return 'TBD'
 
 
+def parse_match_datetime(match):
+    for key in ('matchDateTimeUTC', 'matchDateTime', 'MatchDateTimeUTC', 'MatchDateTime'):
+        dt_text = match.get(key)
+        if isinstance(dt_text, str) and dt_text:
+            try:
+                return datetime.fromisoformat(dt_text.replace('Z', '+00:00'))
+            except Exception:
+                continue
+    return None
+
+
 def format_score(match):
     results = match.get('matchResults') or []
     if not isinstance(results, list):
@@ -57,6 +68,17 @@ def is_live_match(match):
     if match.get('matchIsStarted') and not match.get('matchIsFinished'):
         return True
     return False
+
+
+def is_upcoming_match(match):
+    if is_live_match(match):
+        return False
+    if match.get('matchIsFinished') or match.get('isFinished'):
+        return False
+    dt = parse_match_datetime(match)
+    if dt is None:
+        return True
+    return dt > datetime.now(timezone.utc)
 
 
 def render_live_section(live_matches):
@@ -86,6 +108,30 @@ def render_live_section(live_matches):
     """
 
 
+def render_upcoming_section(upcoming_match):
+    if not upcoming_match:
+        return ''
+    home = upcoming_match.get('team1', {}).get('teamName', 'TBD')
+    away = upcoming_match.get('team2', {}).get('teamName', 'TBD')
+    time_text = parse_match_time(upcoming_match)
+    return f"""
+    <section class=\"info-section\">
+      <h2>⏳ COMING UP</h2>
+      <div class=\"guide-box\">
+        <strong>Next match in line</strong>
+        <div class=\"team-pill\">
+          <div class="team-info">
+            <span class="name-container">
+              <span class="team-name">{home} vs {away}</span>
+              <span class="group-name">{time_text} · Coming up next</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+    """
+
+
 def render_html(matches, existing_html, timestamp):
     if not matches:
         if existing_html:
@@ -105,7 +151,11 @@ def render_html(matches, existing_html, timestamp):
         """
 
     live_matches = [match for match in matches if is_live_match(match)]
+    upcoming_matches = [match for match in matches if is_upcoming_match(match)]
+    upcoming_matches.sort(key=lambda match: parse_match_datetime(match) or datetime.max)
+    next_match = upcoming_matches[0] if upcoming_matches else None
     live_html = render_live_section(live_matches)
+    upcoming_html = render_upcoming_section(next_match)
 
     rows = []
     for match in matches[:8]:
@@ -122,10 +172,11 @@ def render_html(matches, existing_html, timestamp):
 
     return f"""
     <h1>🏆 askporter Sweepstake Command Center 🏆</h1>
-    <div class=\"subtitle\">Auto-updated from OpenLigaDB · {timestamp}</div>
+    <div class="subtitle">Auto-updated from OpenLigaDB · {timestamp}</div>
     {live_html}
-    <section class=\"info-section\">
-      <div class=\"guide-box\">
+    {upcoming_html}
+    <section class="info-section">
+      <div class="guide-box">
         <strong>Latest World Cup data</strong>
         <ul>{''.join(rows)}</ul>
       </div>
