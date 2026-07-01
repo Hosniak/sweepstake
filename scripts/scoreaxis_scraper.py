@@ -107,8 +107,6 @@ def render_live_section(live_matches):
     </section>
     """
 
-
-def render_upcoming_section(upcoming_match):
 def render_upcoming_section(upcoming_matches):
         if not upcoming_matches:
                 return ''
