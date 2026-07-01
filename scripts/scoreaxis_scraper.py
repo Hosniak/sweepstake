@@ -6,6 +6,58 @@ from pathlib import Path
 API_URL = 'https://api.openligadb.de/getmatchdata/wm26/2026'
 OUT_PATH = Path(__file__).resolve().parent.parent / 'sweepstake-data.json'
 
+# Mapping of localized team names to British English names for feed consistency
+TEAM_NAME_MAP = {
+    # common German -> English
+    'Mexiko': 'Mexico',
+    'Südafrika': 'South Africa',
+    'Südkorea': 'South Korea',
+    'Kanada': 'Canada',
+    'Brasilien': 'Brazil',
+    'Marokko': 'Morocco',
+    'Haiti': 'Haiti',
+    'Australien': 'Australia',
+    'Türkei': 'Turkey',
+    'Katar': 'Qatar',
+    'Curaçao': 'Curaçao',
+    'CuraÃ§ao': 'Curaçao',
+    'Schottland': 'Scotland',
+    'Vereinigte Staaten': 'USA',
+    'USA': 'USA',
+    'England': 'England',
+    'Deutschland': 'Germany',
+    'Südkorea': 'South Korea',
+    'Korea Republic': 'South Korea',
+}
+
+
+def normalize_team_name(name: str) -> str:
+    """Return an English team name for a possibly-localized input.
+
+    Falls through to the original name if no mapping is known.
+    """
+    if not isinstance(name, str):
+        return name or 'TBD'
+    # Trim and fix common mojibake that may arrive via feed
+    name = name.strip()
+    # direct map
+    if name in TEAM_NAME_MAP:
+        return TEAM_NAME_MAP[name]
+    # basic replacements for diacritics common in German names
+    repl = {
+        'Ã©': 'é',
+        "Ã´": 'ô',
+        'Ã¼': 'ü',
+        'Ã¶': 'ö',
+        'Ã¡': 'á',
+        'Ã£': 'ã',
+        'Ã¨': 'è',
+    }
+    for k, v in repl.items():
+        if k in name:
+            name = name.replace(k, v)
+    return name
+
 
 def fetch_matches():
     req = urllib.request.Request(
@@ -86,8 +138,8 @@ def is_upcoming_match(match):
 def render_live_section(live_matches):
     rows = []
     for match in (live_matches or []):
-        home = match.get('team1', {}).get('teamName', 'TBD')
-        away = match.get('team2', {}).get('teamName', 'TBD')
+        home = normalize_team_name(match.get('team1', {}).get('teamName', 'TBD'))
+        away = normalize_team_name(match.get('team2', {}).get('teamName', 'TBD'))
         score = format_score(match)
         status = 'LIVE'
         time_text = parse_match_time(match)
@@ -108,8 +160,8 @@ def render_live_section(live_matches):
 def render_upcoming_section(upcoming_matches):
     rows = []
     for match in (upcoming_matches or [])[:3]:
-        home = match.get('team1', {}).get('teamName', 'TBD')
-        away = match.get('team2', {}).get('teamName', 'TBD')
+        home = normalize_team_name(match.get('team1', {}).get('teamName', 'TBD'))
+        away = normalize_team_name(match.get('team2', {}).get('teamName', 'TBD'))
         time_text = parse_match_time(match)
         rows.append(
             f"<div class=\"team-pill\">"
@@ -161,8 +213,8 @@ def render_html(matches, existing_html, timestamp):
 
     rows = []
     for match in sorted(matches, key=lambda match: parse_match_datetime(match) or datetime.max)[:8]:
-        home = match.get('team1', {}).get('teamName', 'TBD')
-        away = match.get('team2', {}).get('teamName', 'TBD')
+        home = normalize_team_name(match.get('team1', {}).get('teamName', 'TBD'))
+        away = normalize_team_name(match.get('team2', {}).get('teamName', 'TBD'))
         score_text = format_score(match)
         if score_text:
             rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong> — {score_text}</li>")
