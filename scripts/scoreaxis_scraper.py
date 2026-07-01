@@ -127,27 +127,28 @@ def render_upcoming_section(upcoming_matches):
 
 
 def render_html(matches, existing_html, timestamp):
-        note_html = ''
-        if not matches:
-                # don't fail hard if the API returned nothing — still render the page
-                # with placeholders so the client always sees the LIVE / COMING UP sections.
-                note_html = f"""
-                <section class=\"info-section\">
-                    <div class=\"guide-box\">
-                        <strong>Latest update</strong>
-                        <ul>
-                            <li>OpenLigaDB did not return match data on this run.</li>
-                            <li>The sweepstake page will keep using the latest cached content until the next refresh.</li>
-                        </ul>
-                    </div>
-                </section>
-                """
-                matches = []
+    note_html = ''
+    if not matches:
+        # don't fail hard if the API returned nothing — still render the page
+        # with placeholders so the client always sees the LIVE / COMING UP sections.
+        note_html = f"""
+        <section class=\"info-section\">
+            <div class=\"guide-box\">
+                <strong>Latest update</strong>
+                <ul>
+                    <li>OpenLigaDB did not return match data on this run.</li>
+                    <li>The sweepstake page will keep using the latest cached content until the next refresh.</li>
+                </ul>
+            </div>
+        </section>
+        """
+        matches = []
 
     live_matches = [match for match in matches if is_live_match(match)]
     upcoming_matches = [match for match in matches if is_upcoming_match(match)]
     upcoming_matches.sort(key=lambda match: parse_match_datetime(match) or datetime.max)
     print(f'Found {len(live_matches)} live matches and {len(upcoming_matches)} upcoming matches')
+
     # show the next up to 3 upcoming matches
     live_html = render_live_section(live_matches)
     upcoming_html = render_upcoming_section(upcoming_matches[:3])
@@ -165,19 +166,19 @@ def render_html(matches, existing_html, timestamp):
                     break
         rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong> — {score_text}</li>")
 
-        return f"""
-        <h1>🏆 askporter Sweepstake Command Center 🏆</h1>
-        <div class="subtitle">Auto-updated from OpenLigaDB · {timestamp}</div>
-        {note_html}
-        {live_html}
-        {upcoming_html}
-        <section class="info-section">
-            <div class="guide-box">
-                <strong>Latest World Cup data</strong>
-                <ul>{''.join(rows)}</ul>
-            </div>
-        </section>
-        """
+    return f"""
+    <h1>🏆 askporter Sweepstake Command Center 🏆</h1>
+    <div class="subtitle">Auto-updated from OpenLigaDB · {timestamp}</div>
+    {note_html}
+    {live_html}
+    {upcoming_html}
+    <section class="info-section">
+      <div class="guide-box">
+        <strong>Latest World Cup data</strong>
+        <ul>{''.join(rows)}</ul>
+      </div>
+    </section>
+    """
 
 
 def main():
