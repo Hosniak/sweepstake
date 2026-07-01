@@ -170,8 +170,6 @@ def render_html(matches, existing_html, timestamp):
         rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong> — {score_text}</li>")
 
     return f"""
-    <h1>🏆 askporter Sweepstake Command Center 🏆</h1>
-    <div class="subtitle">Auto-updated from OpenLigaDB · {timestamp}</div>
     {note_html}
     {live_html}
     {upcoming_html}
@@ -198,6 +196,7 @@ def main():
     payload = {
         'title': 'askporter World Cup Sweepstake',
         'updatedAt': timestamp,
+        'hasMatches': bool(matches),
         'html': render_html(matches, existing_html, timestamp),
     }
     OUT_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')

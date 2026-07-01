@@ -64,6 +64,15 @@
     <h1>🏆 askporter Sweepstake Command Center 🏆</h1>
     <div class="subtitle">Full 11-Player Tournament Roster · Updated 30 June 2026 </div>
 
+    <div id="sweepstake-feed">
+        <section class="info-section">
+            <div class="guide-box">
+                <strong>Live / Upcoming data is loading…</strong>
+                <p>If refresh succeeds, this section will update automatically.</p>
+            </div>
+        </section>
+    </div>
+
     <section class="info-section">
 
         <h2>📋 Sweepstake Guide </h2>
@@ -501,13 +510,20 @@
                 }
                 const data = await response.json();
                 if (data && data.html) {
-                    document.getElementById('sweepstake-content').innerHTML = data.html;
+                    const feedElement = document.getElementById('sweepstake-feed');
+                    if (feedElement && data.hasMatches === false && feedElement.innerHTML.trim()) {
+                        setStatus('Feed returned no match data; preserving the current live/upcoming view', false);
+                    } else if (feedElement) {
+                        feedElement.innerHTML = data.html;
+                    } else {
+                        document.getElementById('sweepstake-content').innerHTML = data.html;
+                    }
                     updateSubtitle();
                     if (data.title) {
                         document.title = data.title;
                     }
                     const nowUK = formatUKTime(getUKTime());
-                    setStatus('Updated ' + nowUK + ' UK', true);
+                    setStatus('Updated ' + nowUK + ' UK', data.hasMatches !== false);
                 } else {
                     throw new Error('Feed missing html payload');
                 }
