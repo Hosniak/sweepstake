@@ -3,7 +3,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-API_URL = 'https://api.openligadb.de/getmatchdata/worldcup/2026'
+API_URL = 'https://api.openligadb.de/getmatchdata/wm26/2026'
 OUT_PATH = Path(__file__).resolve().parent.parent / 'sweepstake-data.json'
 
 
