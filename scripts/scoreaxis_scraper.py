@@ -82,10 +82,8 @@ def is_upcoming_match(match):
 
 
 def render_live_section(live_matches):
-    if not live_matches:
-        return ''
     rows = []
-    for match in live_matches:
+    for match in (live_matches or []):
         home = match.get('team1', {}).get('teamName', 'TBD')
         away = match.get('team2', {}).get('teamName', 'TBD')
         score = format_score(match)
@@ -97,43 +95,33 @@ def render_live_section(live_matches):
             f"<span class=\"group-name\">{time_text} · {status}</span></div></div>"
             f"<div style=\"margin-left:14px;color:#f8fafc;font-size:14px;\">Score: {score}</div>"
         )
+    body = ''.join(rows) if rows else '<div class="guide-box"><em>No live matches right now</em></div>'
     return f"""
     <section class=\"info-section\">
       <h2>🔴 LIVE RIGHT NOW</h2>
-      <div class=\"guide-box\">
-        <strong>Matches currently in progress</strong>
-        {''.join(rows)}
-      </div>
+      {body}
     </section>
     """
 
 def render_upcoming_section(upcoming_matches):
-        if not upcoming_matches:
-                return ''
-        rows = []
-        for match in upcoming_matches[:3]:
-                home = match.get('team1', {}).get('teamName', 'TBD')
-                away = match.get('team2', {}).get('teamName', 'TBD')
-                time_text = parse_match_time(match)
-                rows.append(
-                        f"""
-                    <div class=\"team-pill\">
-                        <div class=\"team-info\">
-                            <span class=\"name-container\">
-                                <span class=\"team-name\">{home} vs {away}</span>
-                                <span class=\"group-name\">{time_text} · Coming up next</span>
-                            </span>
-                        </div>
-                    </div>
-                """
-                )
-        return f"""
-        <section class=\"info-section\">
-            <h2>⏳ COMING UP</h2>
-            <div class=\"guide-box\">
-                <strong>Next matches in line</strong>
-                {''.join(rows)}
-            </div>
+    rows = []
+    for match in (upcoming_matches or [])[:3]:
+        home = match.get('team1', {}).get('teamName', 'TBD')
+        away = match.get('team2', {}).get('teamName', 'TBD')
+        time_text = parse_match_time(match)
+        rows.append(
+            f"<div class=\"team-pill\">"
+            f"<div class=\"team-info\">"
+            f"<span class=\"name-container\">"
+            f"<span class=\"team-name\">{home} vs {away}</span>"
+            f"<span class=\"group-name\">{time_text} · Coming up next</span>"
+            f"</span></div></div>"
+        )
+    body = ''.join(rows) if rows else '<div class="guide-box"><em>No upcoming matches scheduled</em></div>'
+    return f"""
+        <section class=\"info-section\"> 
+            <h2>⏳ COMING UP</h2> 
+            {body}
         </section>
         """
 
@@ -159,6 +147,7 @@ def render_html(matches, existing_html, timestamp):
     live_matches = [match for match in matches if is_live_match(match)]
     upcoming_matches = [match for match in matches if is_upcoming_match(match)]
     upcoming_matches.sort(key=lambda match: parse_match_datetime(match) or datetime.max)
+    print(f'Found {len(live_matches)} live matches and {len(upcoming_matches)} upcoming matches')
     # show the next up to 3 upcoming matches
     live_html = render_live_section(live_matches)
     upcoming_html = render_upcoming_section(upcoming_matches[:3])
