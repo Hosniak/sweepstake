@@ -56,10 +56,12 @@ def format_score(match):
     for result in results:
         if result.get('resultType') == 'FINAL' or str(result.get('resultName', '')).lower() == 'final':
             return f"{result.get('pointsTeam1', '?')} - {result.get('pointsTeam2', '?')}"
-    if results:
-        first = results[0]
-        return f"{first.get('pointsTeam1', '?')} - {first.get('pointsTeam2', '?')}"
-    return 'vs'
+    for result in results:
+        if result.get('pointsTeam1') is not None and result.get('pointsTeam2') is not None:
+            return f"{result.get('pointsTeam1', '?')} - {result.get('pointsTeam2', '?')}"
+    if match.get('matchIsStarted') or match.get('isLive') or match.get('matchIsRunning'):
+        return 'TBD'
+    return ''
 
 
 def is_live_match(match):
@@ -158,17 +160,14 @@ def render_html(matches, existing_html, timestamp):
     upcoming_html = render_upcoming_section(upcoming_matches[:3])
 
     rows = []
-    for match in matches[:8]:
+    for match in sorted(matches, key=lambda match: parse_match_datetime(match) or datetime.max)[:8]:
         home = match.get('team1', {}).get('teamName', 'TBD')
         away = match.get('team2', {}).get('teamName', 'TBD')
-        score = match.get('matchResults', [{}])
-        score_text = 'vs'
-        if score:
-            for result in score:
-                if result.get('resultType') == 'FINAL':
-                    score_text = f"{result.get('pointsTeam1', '?')} - {result.get('pointsTeam2', '?')}"
-                    break
-        rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong> — {score_text}</li>")
+        score_text = format_score(match)
+        if score_text:
+            rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong> — {score_text}</li>")
+        else:
+            rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong></li>")
 
     return f"""
     {note_html}
