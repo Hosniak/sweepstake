@@ -127,8 +127,11 @@ def render_upcoming_section(upcoming_matches):
 
 
 def render_html(matches, existing_html, timestamp):
-    note_html = ''
     if not matches:
+        if existing_html:
+            print('No match data returned; preserving existing HTML output')
+            return existing_html
+
         # don't fail hard if the API returned nothing — still render the page
         # with placeholders so the client always sees the LIVE / COMING UP sections.
         note_html = f"""
