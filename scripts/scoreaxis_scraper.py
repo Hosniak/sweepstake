@@ -211,15 +211,25 @@ def render_html(matches, existing_html, timestamp):
     live_html = render_live_section(live_matches)
     upcoming_html = render_upcoming_section(upcoming_matches[:3])
 
+    # For the summary list, only include live matches and upcoming matches
+    # Do not show finished (past) matches here to avoid displaying stale details.
     rows = []
-    for match in sorted(matches, key=lambda match: parse_match_datetime(match) or datetime.max)[:8]:
+    summary_matches = []
+    # live matches first
+    summary_matches.extend(live_matches)
+    # then upcoming matches (already sorted earlier)
+    summary_matches.extend(upcoming_matches[:8 - len(summary_matches)])
+
+    for match in summary_matches:
         home = normalize_team_name(match.get('team1', {}).get('teamName', 'TBD'))
         away = normalize_team_name(match.get('team2', {}).get('teamName', 'TBD'))
-        score_text = format_score(match)
-        if score_text:
+        if is_live_match(match):
+            score_text = format_score(match) or 'TBD'
             rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong> — {score_text}</li>")
         else:
-            rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong></li>")
+            # upcoming: show teams and scheduled time but do not include past/final scores
+            time_text = parse_match_time(match)
+            rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong> — {time_text}</li>")
 
     return f"""
     {note_html}
