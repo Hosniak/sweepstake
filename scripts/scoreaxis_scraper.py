@@ -109,27 +109,35 @@ def render_live_section(live_matches):
 
 
 def render_upcoming_section(upcoming_match):
-    if not upcoming_match:
-        return ''
-    home = upcoming_match.get('team1', {}).get('teamName', 'TBD')
-    away = upcoming_match.get('team2', {}).get('teamName', 'TBD')
-    time_text = parse_match_time(upcoming_match)
-    return f"""
-    <section class=\"info-section\">
-      <h2>⏳ COMING UP</h2>
-      <div class=\"guide-box\">
-        <strong>Next match in line</strong>
-        <div class=\"team-pill\">
-          <div class="team-info">
-            <span class="name-container">
-              <span class="team-name">{home} vs {away}</span>
-              <span class="group-name">{time_text} · Coming up next</span>
-            </span>
-          </div>
-        </div>
-      </div>
-    </section>
-    """
+def render_upcoming_section(upcoming_matches):
+        if not upcoming_matches:
+                return ''
+        rows = []
+        for match in upcoming_matches[:3]:
+                home = match.get('team1', {}).get('teamName', 'TBD')
+                away = match.get('team2', {}).get('teamName', 'TBD')
+                time_text = parse_match_time(match)
+                rows.append(
+                        f"""
+                    <div class=\"team-pill\">
+                        <div class=\"team-info\">
+                            <span class=\"name-container\">
+                                <span class=\"team-name\">{home} vs {away}</span>
+                                <span class=\"group-name\">{time_text} · Coming up next</span>
+                            </span>
+                        </div>
+                    </div>
+                """
+                )
+        return f"""
+        <section class=\"info-section\">
+            <h2>⏳ COMING UP</h2>
+            <div class=\"guide-box\">
+                <strong>Next matches in line</strong>
+                {''.join(rows)}
+            </div>
+        </section>
+        """
 
 
 def render_html(matches, existing_html, timestamp):
@@ -153,9 +161,9 @@ def render_html(matches, existing_html, timestamp):
     live_matches = [match for match in matches if is_live_match(match)]
     upcoming_matches = [match for match in matches if is_upcoming_match(match)]
     upcoming_matches.sort(key=lambda match: parse_match_datetime(match) or datetime.max)
-    next_match = upcoming_matches[0] if upcoming_matches else None
+    # show the next up to 3 upcoming matches
     live_html = render_live_section(live_matches)
-    upcoming_html = render_upcoming_section(next_match)
+    upcoming_html = render_upcoming_section(upcoming_matches[:3])
 
     rows = []
     for match in matches[:8]:
