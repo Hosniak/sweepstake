@@ -127,22 +127,22 @@ def render_upcoming_section(upcoming_matches):
 
 
 def render_html(matches, existing_html, timestamp):
-    if not matches:
-        if existing_html:
-            return existing_html
-        return f"""
-        <h1>🏆 askporter Sweepstake Command Center 🏆</h1>
-        <div class=\"subtitle\">No World Cup match data available yet — checking again soon.</div>
-        <section class=\"info-section\">
-          <div class=\"guide-box\">
-            <strong>Latest update</strong>
-            <ul>
-              <li>OpenLigaDB did not return match data on this run.</li>
-              <li>The sweepstake page will keep using the latest cached content until the next refresh.</li>
-            </ul>
-          </div>
-        </section>
-        """
+        note_html = ''
+        if not matches:
+                # don't fail hard if the API returned nothing — still render the page
+                # with placeholders so the client always sees the LIVE / COMING UP sections.
+                note_html = f"""
+                <section class=\"info-section\">
+                    <div class=\"guide-box\">
+                        <strong>Latest update</strong>
+                        <ul>
+                            <li>OpenLigaDB did not return match data on this run.</li>
+                            <li>The sweepstake page will keep using the latest cached content until the next refresh.</li>
+                        </ul>
+                    </div>
+                </section>
+                """
+                matches = []
 
     live_matches = [match for match in matches if is_live_match(match)]
     upcoming_matches = [match for match in matches if is_upcoming_match(match)]
@@ -165,18 +165,19 @@ def render_html(matches, existing_html, timestamp):
                     break
         rows.append(f"<li><strong>{home}</strong> vs <strong>{away}</strong> — {score_text}</li>")
 
-    return f"""
-    <h1>🏆 askporter Sweepstake Command Center 🏆</h1>
-    <div class="subtitle">Auto-updated from OpenLigaDB · {timestamp}</div>
-    {live_html}
-    {upcoming_html}
-    <section class="info-section">
-      <div class="guide-box">
-        <strong>Latest World Cup data</strong>
-        <ul>{''.join(rows)}</ul>
-      </div>
-    </section>
-    """
+        return f"""
+        <h1>🏆 askporter Sweepstake Command Center 🏆</h1>
+        <div class="subtitle">Auto-updated from OpenLigaDB · {timestamp}</div>
+        {note_html}
+        {live_html}
+        {upcoming_html}
+        <section class="info-section">
+            <div class="guide-box">
+                <strong>Latest World Cup data</strong>
+                <ul>{''.join(rows)}</ul>
+            </div>
+        </section>
+        """
 
 
 def main():
